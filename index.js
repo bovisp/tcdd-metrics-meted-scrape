@@ -22,12 +22,12 @@ const processEnglishCoursesByPage = (pgNum) => { axios.get(`${baseURL}/training_
 
       $('ul.mod.detail_view.group').each((i, el) => {
         const courseObj = {}
-        courseObj.titleEn =  $(el).find('.module_title h5 a').text().trim()
-        courseObj.publishDateEn =  $(el).find('strong:contains("Publish Date")')[0].next.data
-        courseObj.lastUpdatedEn =  $(el).find('strong:contains("Last Updated On")').length ? $(el).find('strong:contains("Last Updated On")')[0].next.data : ''
+        courseObj.title =  $(el).find('.module_title h5 a').text().trim()
+        courseObj.publishDate =  $(el).find('strong:contains("Publish Date")')[0].next.data
+        courseObj.lastUpdated =  $(el).find('strong:contains("Last Updated On")').length ? $(el).find('strong:contains("Last Updated On")')[0].next.data : courseObj.publishDate
         courseObj.completionTime =  $(el).find('strong:contains("Completion Time")')[0].next.data
-        courseObj.imageSrcEn =  `https://www.meted.ucar.edu${$(el).find('li.thumbnail a img')[0].attribs.src}`
-        courseObj.descriptionEn =  $(el).find('li.description p')[0].children[0].data
+        courseObj.imageSrc =  `https://www.meted.ucar.edu${$(el).find('li.thumbnail a img')[0].attribs.src}`
+        courseObj.description =  $(el).find('li.description p')[0].children[0].data
         courseObj.topicsArr = []
         
         $(el)
@@ -39,7 +39,7 @@ const processEnglishCoursesByPage = (pgNum) => { axios.get(`${baseURL}/training_
 
         const enLink =  $(el)
         .find('.module_title a[href*="training_module"]:contains("English")')
-        courseObj.enURL = enLink.length ? `${baseURL}/${enLink[0].attribs.href}` : ''
+        courseObj.URL = enLink.length ? `${baseURL}/${enLink[0].attribs.href}` : ''
 
         courseArr.push(courseObj)
       })
@@ -72,12 +72,12 @@ const insertEnglishCoursesIntoDatabase = (courseArr) => {
       return;
     }
     courseArr.forEach(course => {
-      course.titleEn = course.titleEn.replace(/"/g, '&quot;')
-      course.descriptionEn = course.descriptionEn.replace(/"/g, '&quot;')
+      course.title = course.title.replace(/"/g, '&quot;')
+      course.description = course.description.replace(/"/g, '&quot;')
 
       connection.query(`
-        INSERT INTO comet_english (titleEn, publishDateEn, lastUpdatedEn, completionTime, imageSrcEn, descriptionEn, enURL, topics)
-        VALUES ("${course.titleEn}", "${course.publishDateEn}", "${course.lastUpdatedEn}", "${course.completionTime}", "${course.imageSrcEn}", "${course.descriptionEn}", "${course.enURL}", "${course.topics}")`, function (error, results, fields) {
+        INSERT INTO comet_modules (title, publish_date, last_updated, completion_time, image_src, description, topics, url, language)
+        VALUES ("${course.title}", "${course.publishDate}", "${course.lastUpdated}", "${course.completionTime}", "${course.imageSrc}", "${course.description}", "${course.topics}", "${course.URL}", "english")`, function (error, results, fields) {
         if (error)
           throw error;
         // connected!
@@ -98,13 +98,13 @@ const processFrenchCoursesByPage = (pgNum) => { axios.get(`${baseURL}/training_d
 
       for(let el of courseNodesArr) {
         const courseObj = {}
-        courseObj.titleFr =  $(el).find('.module_title h5 a').text().trim()
-        courseObj.publishDateFr =  $(el).find('strong:contains("Publish Date")')[0].next.data
-        courseObj.lastUpdatedFr =  $(el).find('strong:contains("Last Updated On")').length ? $(el).find('strong:contains("Last Updated On")')[0].next.data : ''
+        courseObj.title =  $(el).find('.module_title h5 a').text().trim()
+        courseObj.publishDate =  $(el).find('strong:contains("Publish Date")')[0].next.data
+        courseObj.lastUpdated =  $(el).find('strong:contains("Last Updated On")').length ? $(el).find('strong:contains("Last Updated On")')[0].next.data : courseObj.publishDate
         courseObj.completionTime =  $(el).find('strong:contains("Completion Time")')[0].next.data
-        courseObj.imageSrcFr =  `https://www.meted.ucar.edu${$(el).find('li.thumbnail a img')[0].attribs.src}`
+        courseObj.imageSrc =  `https://www.meted.ucar.edu${$(el).find('li.thumbnail a img')[0].attribs.src}`
         //courseObj.descriptionFr =  $(el).find('li.description p')[0].children[0].data
-        courseObj.descriptionFr = ''
+        courseObj.description = ''
         courseObj.topicsArr = []
         
         $(el)
@@ -116,22 +116,21 @@ const processFrenchCoursesByPage = (pgNum) => { axios.get(`${baseURL}/training_d
 
         const frLink =  $(el)
           .find('.module_title a[href*="training_module"]:contains("French")')
-        courseObj.frURL = frLink.length ? `${baseURL}/${frLink[0].attribs.href}` : ''
+        courseObj.URL = frLink.length ? `${baseURL}/${frLink[0].attribs.href}` : ''
 
         const enLink =  $(el)
         .find('.module_title a[href*="training_module"]:contains("English")')
         courseObj.enURL = enLink.length ? `${baseURL}/${enLink[0].attribs.href}` : ''
 
-        let res = await axios.get(courseObj.frURL);
+        let res = await axios.get(courseObj.URL);
         if (res.status === 200) {
           const $ = await cheerio.load(res.data)
           if ($('.tab_content.description p').length) {
-            courseObj.descriptionFr = await $('.tab_content.description p')[0].children[0].data.trim()
+            courseObj.description = await $('.tab_content.description p')[0].children[0].data.trim()
           } else {
-            courseObj.descriptionFr = await $('.tab_content.description')[0].children[0].data.trim()
+            courseObj.description = await $('.tab_content.description')[0].children[0].data.trim()
           }
         }
-
         courseArr.push(courseObj)
       }
 
@@ -157,23 +156,27 @@ const processFrenchCoursesByPage = (pgNum) => { axios.get(`${baseURL}/training_d
 
 const insertFrenchCoursesIntoDatabase = (courseArr) => {
 
-  connection.connect(function(err) {
+  connection.connect(async function(err) {
     if (err) {
       console.error('error connecting: ' + err.stack);
       return;
     }
-    courseArr.forEach(course => {
-      course.titleFr = course.titleFr.replace(/"/g, '&quot;')
-      course.descriptionFr = course.descriptionFr.replace(/"/g, '&quot;')
 
-      connection.query(`
-      INSERT INTO comet_french (titleFr, publishDateFr, lastUpdatedFr, completionTime, imageSrcFr, descriptionFr, frURL, enURL, topics)
-      VALUES ("${course.titleFr}", "${course.publishDateFr}", "${course.lastUpdatedFr}", "${course.completionTime}", "${course.imageSrcFr}", "${course.descriptionFr}", "${course.frURL}", "${course.enURL}", "${course.topics}")`, function (error, results, fields) {
-        if (error)
-          throw error;
-        // connected!
-      });
-    })
+    for(course of courseArr) {
+      course.title = course.title.replace(/"/g, '&quot;')
+      course.description = course.description.replace(/"/g, '&quot;')
+
+      connection.query(`SELECT id FROM comet_modules WHERE url = "${course.enURL}"`, function(err, result, fields) {
+        if (err) throw err;
+        let englishVersionId = result[0].id
+        
+        connection.query(`
+        INSERT INTO comet_modules (title, publish_date, last_updated, completion_time, image_src, description, topics, url, language, english_version_id)
+        VALUES ("${course.title}", "${course.publishDate}", "${course.lastUpdated}", "${course.completionTime}", "${course.imageSrc}", "${course.description}", "${course.topics}", "${course.URL}", "french", "${englishVersionId}")`, function (err, results, fields) {
+          if (err) throw err;
+        });
+      })
+    }
     console.log('Inserted courses into database!')
   });
 }
