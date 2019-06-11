@@ -162,21 +162,21 @@ const insertFrenchCoursesIntoDatabase = (courseArr) => {
       return;
     }
 
-    for(course of courseArr) {
+    courseArr.forEach(course => {
       course.title = course.title.replace(/"/g, '&quot;')
       course.description = course.description.replace(/"/g, '&quot;')
 
       connection.query(`SELECT id FROM comet_modules WHERE url = "${course.enURL}"`, function(err, result, fields) {
         if (err) throw err;
         let englishVersionId = result[0].id
-        
+
         connection.query(`
         INSERT INTO comet_modules (title, publish_date, last_updated, completion_time, image_src, description, topics, url, language, english_version_id)
         VALUES ("${course.title}", "${course.publishDate}", "${course.lastUpdated}", "${course.completionTime}", "${course.imageSrc}", "${course.description}", "${course.topics}", "${course.URL}", "french", "${englishVersionId}")`, function (err, results, fields) {
           if (err) throw err;
         });
       })
-    }
+    })
     console.log('Inserted courses into database!')
   });
 }
