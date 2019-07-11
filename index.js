@@ -1,3 +1,4 @@
+require('dotenv').config()
 const axios = require('axios')
 const cheerio = require('cheerio')
 var mysql      = require('mysql')
@@ -6,10 +7,10 @@ const baseURL = 'https://www.meted.ucar.edu'
 
 const scrapeEnglishCourses = () => {
   var connection = mysql.createConnection({
-    host     : 'localhost',
-    user     : 'root',
-    password : '',
-    database : 'tcdd-metrics'
+    host     : process.env.DB_HOST,
+    user     : process.env.DB_USER,
+    password : process.env.DB_PASS,
+    database : process.env.DB_DATABASE
   })
   let courseArr = []
   let highestPgNum = null
@@ -95,10 +96,10 @@ const scrapeEnglishCourses = () => {
 
 const scrapeFrenchCourses = () => {
   var connection = mysql.createConnection({
-    host     : 'localhost',
-    user     : 'root',
-    password : '',
-    database : 'tcdd-metrics'
+    host     : process.env.DB_HOST,
+    user     : process.env.DB_USER,
+    password : process.env.DB_PASS,
+    database : process.env.DB_DATABASE
   })
   let courseArr = []
   let highestPgNum = null
